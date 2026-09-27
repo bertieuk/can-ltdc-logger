@@ -1,6 +1,9 @@
 /* A simple SocketCAN example */
 #include <stdio.h>
+#include <errno.h>
 #include <string.h>
+#include <stddef.h>
+#include <unistd.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <net/if.h>
@@ -37,7 +40,7 @@ int open_port(const char *port)
 int send_port(struct can_frame *frame)
 {
     int retval;
-   retval = write(soc, frame, sizeof(struct can_frame));
+    retval = write(soc, frame, sizeof(struct can_frame));
     if (retval != sizeof(struct can_frame))
     {
         return (-1);
@@ -63,14 +66,22 @@ void read_port()
         {
             if (!read_can_port)
             {
+                fprintf(stderr, "[DEBUG] Loop broken: read_can_port returned false or 0. System error: %s\n", strerror(errno));
                 break;
+            }
+            else
+            {
+                // This will print every single raw frame ID that the code actually receives
+                fprintf(stdout, "[DEBUG] Received raw CAN ID: 0x%08X (DLC: %d)\n", frame_rd.can_id, frame_rd.can_dlc);
             }
             if (FD_ISSET(soc, &readSet))
             {
-                recvbytes = read(soc, &frame_rd, sizeof(struct can_frame));
+                memset(&frame_rd, 0, sizeof(struct can_frame));
+                recvbytes = recvfrom(soc, &frame_rd, sizeof(struct can_frame), 0, NULL, NULL);
+//                recvbytes = read(soc, &frame_rd, sizeof(struct can_frame));
                 if(recvbytes)
                 {
-		    time_t timestamp_sec = NULL;
+		    time_t timestamp_sec = 0;
                     char xf[255]="";
 		    int a;
 		    time(&timestamp_sec);
@@ -82,7 +93,7 @@ void read_port()
 		    }
                     fprintf(stderr, "id = %x, dlc = %d, data = 0x%s\n", frame_rd.can_id, frame_rd.can_dlc, xf);
 		    // DLG Sensor 0x01
-		    if (frame_rd.can_id == 0x90011680 && frame_rd.can_dlc == 5)
+		    if (frame_rd.can_id == 0x90071680 && frame_rd.can_dlc == 5)
                     {
 			char sensor[255] = "";
 			int val = frame_rd.data[2]*256+frame_rd.data[1];
