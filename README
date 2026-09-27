@@ -1,9 +1,55 @@
 This tool allows monitoring several values from th following device:
--Austria Email AG - ECO SWIFT 800 PZR
 -SOREL LTDC
 
 Other devices may work as well.
 
-CAN addresses are taken from SOREL CAN BUS Interface (SCBI) documentation.
+For use with Raspberry Pi + MCP2515 Module
 
-See image for wiring.
+Will need to install mosquitto_client and can_utils 
+
+Raspberry Pi Model B (26-Pin Header)
+VCC ➡️ Pin 1 (3.3V)
+GND ➡️ Pin 6 (GND)
+CS ➡️ Pin 24 (GPIO 8 / CE0)
+SO ➡️ Pin 21 (GPIO 9 / MISO)
+SI ➡️ Pin 19 (GPIO 10 / MOSI)
+SCK ➡️ Pin 23 (GPIO 11 / SCLK)
+INT ➡️ Pin 22 (GPIO 25)
+
+nano /boot/firmware/config.txt (or /boot/config.txt on older operating systems)
+
+For an 8MHz Board (Most Common):
+dtparam=spi=on
+dtoverlay=mcp2515-can0,oscillator=8000000,interrupt=25
+
+For a 16MHz Board:
+dtparam=spi=on
+dtoverlay=mcp2515-can0,oscillator=16000000,interrupt=25
+
+After saving the file, run sudo reboot
+
+Bridge J1 on the MCP2515 board if it is the last device in the can chain
+Connect from can port inside LTDC to the MCP2515 can header, left to H, right to L
+
+Check can is discovered
+dmesg
+
+Bring up can
+ip link set can0 up type can bitrate 250000
+
+Check can interface
+ip addr show can0
+
+can-ltdc-logger.c is very close to the original ddimension version
+can-ltdc-logger2.c is a heavily modified version by AI to match my LTDC, CAN ID, and publish names to match my existing mqtt values for simplicity with Home Assistant
+
+(I implemented this solution to replace a curl script scraping the Sorel-connect.net nabto page from a Sorel data logger)
+
+Compile 
+gcc -o can-ltdc-logger can-ltdc-logger2.c
+
+Test
+can-ltdc-logger can0
+
+Can uncomment line 72 for DEBUG 
+
