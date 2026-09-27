@@ -3,7 +3,7 @@ Description=can-ltdc-logger-mqtt
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/can-ltdc-logger-mqtt
+ExecStart=/home/pi/can-ltdc-logger-0.1/can-ltdc-logger-mqtt.sh
 Restart=always
 
 [Install]
